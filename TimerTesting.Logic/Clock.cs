@@ -7,7 +7,7 @@ namespace TimerTesting.Logic
 
     public class Clock 
     {
-        public string DisplayedTime => DateTime.Now.ToString("HH:mm:ss");
+        public string DisplayedTime => DateTime.Now.ToString("hh:mm:ss");
 
         public event EventHandler<EventArgs>? TimeChanged;
         public event EventHandler<RingState>? RingChanged;
@@ -24,16 +24,16 @@ namespace TimerTesting.Logic
             {
                 TimeChanged?.Invoke(this, EventArgs.Empty);
 
-                if (e.SignalTime.Minute == 0 && e.SignalTime.Second == 0)
-                    FireRinging(e);
+                if (DateTime.Now.Minute == 0 && DateTime.Now.Second == 0)
+                    FireRinging(DateTime.Now.Hour);
             };
             
             _timer.Start();
         }
 
-        private void FireRinging(ElapsedEventArgs e)
+        private void FireRinging(int hour)
         {
-            int countdown = e.SignalTime.Hour;
+            int countdown = hour % 12 == 0 ? 12 : hour % 12;
 
             RingState state = RingState.On;
 
