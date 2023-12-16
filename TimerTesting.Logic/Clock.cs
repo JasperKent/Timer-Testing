@@ -39,9 +39,15 @@ namespace TimerTesting.Logic
 
             _ringTimer.Elapsed += (s, e) =>
             {
-                RingChanged?.Invoke(this, state = state == RingState.On ? RingState.Off : RingState.On);
+                RingChanged?.Invoke(this, state);
 
-                --countdown;
+                if (state == RingState.Off)
+                {
+                    --countdown;
+                    state = RingState.On;
+                }
+                else
+                    state = RingState.Off;
 
                 if (countdown == 0)
                     _ringTimer.Stop();
