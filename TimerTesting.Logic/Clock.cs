@@ -35,7 +35,7 @@ namespace TimerTesting.Logic
         {
             int countdown = e.SignalTime.Hour;
 
-            RingState state = RingState.Off;
+            RingState state = RingState.On;
 
             _ringTimer.Elapsed += (s, e) =>
             {

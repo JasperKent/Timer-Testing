@@ -23,6 +23,11 @@
     {
         base.OnInitialized();
 
+        SetupTimers();
+    }
+
+    private void SetupTimers()
+    {
         _clock.TimeChanged += (s, e) => StateHasChanged();
 
         _clock.RingChanged += (s, e) =>
@@ -33,5 +38,4 @@
             StateHasChanged();
         };
     }
-
 }
