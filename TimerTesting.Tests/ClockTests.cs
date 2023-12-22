@@ -37,8 +37,6 @@ namespace TimerTesting.Tests
 
             TimerCallback tickCallback = o => { };
 
-            provider.GetUtcNow().Returns(new DateTimeOffset(2023, 12, 25, 12, 15, 30, default));
-
             provider.CreateTimer(
                 Arg.Do<TimerCallback>(c => tickCallback = c),
                 Arg.Any<object>(),

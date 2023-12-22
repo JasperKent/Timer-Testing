@@ -27,6 +27,8 @@
 
     private void CheatChanged()
     {
+        ClearTimers();
+
         _clock = _useCheat
             ? _provider.GetRequiredKeyedService<Clock>("WithOffset")
             : _provider.GetRequiredService<Clock>();
@@ -41,16 +43,28 @@
         SetupTimers();
     }
 
+    private void ClearTimers()
+    {
+        _clock.TimeChanged -= TimeChanged;
+        _clock.RingChanged -= RingChanged;
+    }
+
+    private void TimeChanged (object? sender, EventArgs args)
+    {
+        StateHasChanged();
+    }
+
+    private void RingChanged(object? sender, RingState state)
+    {
+        _bellImage = state == RingState.On ? "BellRinging.png" : "BellStill.png";
+        _bellClass = state == RingState.On ? "shake" : "";
+
+        StateHasChanged();
+    }
+
     private void SetupTimers()
     {
-        _clock.TimeChanged += (s, e) => StateHasChanged();
-
-        _clock.RingChanged += (s, e) =>
-        {
-            _bellImage = e == RingState.On ? "BellRinging.png" : "BellStill.png";
-            _bellClass = e == RingState.On ? "shake" : "";
-
-            StateHasChanged();
-        };
+        _clock.TimeChanged += TimeChanged;
+        _clock.RingChanged += RingChanged;
     }
 }
