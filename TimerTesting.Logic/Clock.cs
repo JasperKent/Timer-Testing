@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Timers;
 
 namespace TimerTesting.Logic
@@ -7,28 +8,30 @@ namespace TimerTesting.Logic
 
     public class Clock 
     {
-        public string DisplayedTime => DateTime.Now.ToString("hh:mm:ss");
+        public string DisplayedTime => _timeProvider.GetUtcNow().LocalDateTime.ToString("hh:mm:ss");
 
         public event EventHandler<EventArgs>? TimeChanged;
         public event EventHandler<RingState>? RingChanged;
 
-        private Timer _timer;
-        private Timer _ringTimer;
+        private ITimer? _ringTimer;
 
-        public Clock()
+        private readonly TimeProvider _timeProvider;
+
+        public Clock(TimeProvider timeProvider)
         {
-            _timer = new Timer(new TimeSpan(0, 0, 1));
-            _ringTimer = new Timer(new TimeSpan(0, 0, 0, 0, 500));
+            _timeProvider = timeProvider;
 
-            _timer.Elapsed += (s, e) =>
+            _timeProvider.CreateTimer(tickCallback, null, default, new TimeSpan(0, 0, 1));
+
+            void tickCallback(object? o)
             {
                 TimeChanged?.Invoke(this, EventArgs.Empty);
 
-                if (DateTime.Now.Minute == 0 && DateTime.Now.Second == 0)
-                    FireRinging(DateTime.Now.Hour);
-            };
-            
-            _timer.Start();
+                var now = _timeProvider.GetUtcNow().LocalDateTime;
+
+                if (now.Minute == 0 && now.Second == 0)
+                    FireRinging(now.Hour);
+            };          
         }
 
         private void FireRinging(int hour)
@@ -37,7 +40,10 @@ namespace TimerTesting.Logic
 
             RingState state = RingState.On;
 
-            _ringTimer.Elapsed += (s, e) =>
+            _ringTimer ??= _timeProvider.CreateTimer(ringCallback, null, default, new TimeSpan(0, 0, 0, 0, 500));
+            _ringTimer.Change(default, new TimeSpan(0, 0, 0, 0, 500));
+
+            void ringCallback(object? o) 
             {
                 RingChanged?.Invoke(this, state);
 
@@ -50,10 +56,8 @@ namespace TimerTesting.Logic
                     state = RingState.Off;
 
                 if (countdown == 0)
-                    _ringTimer.Stop();
+                    _ringTimer?.Change(default, Timeout.InfiniteTimeSpan);
             };
-
-            _ringTimer.Start();
         }
     }
 }

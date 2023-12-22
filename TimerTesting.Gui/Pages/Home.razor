@@ -1,11 +1,16 @@
 ﻿@page "/"
 @using TimerTesting.Logic
 @inject Clock _clock;
+@inject IServiceProvider _provider;
 
 <PageTitle>Clock</PageTitle>
 
 <article>
     <section>
+        <section>
+            <label for="cheat-check">Force chime:</label>
+            <InputCheckbox id="cheat-check" @bind-Value=_useCheat @bind-Value:after="CheatChanged" />
+        </section>
         <section class="clock">
             <span>@_clock.DisplayedTime[0]</span><span>@_clock.DisplayedTime[1]</span><span class="colon">:</span><span>@_clock.DisplayedTime[3]</span><span>@_clock.DisplayedTime[4]</span><span class="colon">:</span><span>@_clock.DisplayedTime[6]</span><span>@_clock.DisplayedTime[7]</span>
         </section>
@@ -18,6 +23,16 @@
 @code{
     private string _bellImage = "BellStill.png";
     private string _bellClass = "";
+    private bool _useCheat;
+
+    private void CheatChanged()
+    {
+        _clock = _useCheat
+            ? _provider.GetRequiredKeyedService<Clock>("WithOffset")
+            : _provider.GetRequiredService<Clock>();
+
+        SetupTimers();
+    }
 
     protected override void OnInitialized()
     {
