@@ -45,18 +45,21 @@ namespace TimerTesting.Logic
 
             void ringCallback(object? o) 
             {
-                RingChanged?.Invoke(this, state);
-
-                if (state == RingState.Off)
+                if (countdown > 0)
                 {
-                    --countdown;
-                    state = RingState.On;
-                }
-                else
-                    state = RingState.Off;
+                    RingChanged?.Invoke(this, state);
 
-                if (countdown == 0)
-                    _ringTimer?.Change(default, Timeout.InfiniteTimeSpan);
+                    if (state == RingState.Off)
+                    {
+                        --countdown;
+                        state = RingState.On;
+                    }
+                    else
+                        state = RingState.Off;
+
+                    if (countdown == 0)
+                        _ringTimer?.Change(default, Timeout.InfiniteTimeSpan);
+                }
             };
         }
     }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using TimerTesting.Logic;
 using Xunit;
@@ -9,7 +10,7 @@ namespace TimerTesting.Tests
         [Fact]
         public void Creation()
         {
-            var clock = new Clock(Substitute.For<TimeProvider>());
+            var clock = new Clock(new FakeTimeProvider());
 
             Assert.NotNull(clock);
         }
@@ -21,9 +22,7 @@ namespace TimerTesting.Tests
         [InlineData(0, 2, 3, "12:02:03")]
         public void DisplaysCorrectTime (int h, int m, int s, string expected)
         {
-            var provider = Substitute.For<TimeProvider>();
-
-            provider.GetUtcNow().Returns(new DateTimeOffset(2023, 12, 25, h, m, s, default));
+            var provider = new FakeTimeProvider(new DateTimeOffset(2023, 12, 25, h, m, s, default));
 
             var clock = new Clock(provider);
 
@@ -33,16 +32,7 @@ namespace TimerTesting.Tests
         [Fact]
         public void TickFiresEvent () 
         {
-            var provider = Substitute.For<TimeProvider>();
-
-            TimerCallback tickCallback = o => { };
-
-            provider.CreateTimer(
-                Arg.Do<TimerCallback>(c => tickCallback = c),
-                Arg.Any<object>(),
-                Arg.Any<TimeSpan>(),
-                Arg.Is(new TimeSpan(0, 0, 1))
-            );
+            var provider = new FakeTimeProvider(new DateTimeOffset(2023, 12, 25, 1, 2, 3, default));
 
             var clock = new Clock(provider);
 
@@ -50,7 +40,7 @@ namespace TimerTesting.Tests
 
             clock.TimeChanged += (s, e) => fireCount++;
 
-            tickCallback(null);
+            provider.Advance(new TimeSpan(0, 0, 1));
 
             Assert.Equal(1, fireCount);
         }
@@ -62,32 +52,8 @@ namespace TimerTesting.Tests
         [InlineData(15, 3)]
         public void RingCountCorrect(int hour, int count)
         {
-            var provider = Substitute.For<TimeProvider>();
-            var timer = Substitute.For<ITimer>();
-
-            TimeSpan? period = null;
-
-            timer.Change(Arg.Any<TimeSpan>(), Arg.Do<TimeSpan>(ts => period = ts));
-
-            TimerCallback tickCallback = o => { };
-            TimerCallback ringCallback = o => { };
-
-            provider.GetUtcNow().Returns(new DateTimeOffset(2023, 12, 25, hour, 0, 0, default));
-
-            provider.CreateTimer(
-                Arg.Do<TimerCallback>(c => tickCallback = c),
-                Arg.Any<object>(),
-                Arg.Any<TimeSpan>(),
-                Arg.Is(new TimeSpan(0, 0, 1))
-            );
-
-            provider.CreateTimer(
-                Arg.Do<TimerCallback>(c => ringCallback = c),
-                Arg.Any<object>(),
-                Arg.Any<TimeSpan>(),
-                Arg.Is(new TimeSpan(0, 0, 0, 0, 500))
-            ).Returns(timer);
-
+            var provider = new FakeTimeProvider(new DateTimeOffset(2023, 12, 25, hour, 0, 0, default) - new TimeSpan(0,0,1));
+                        
             var clock = new Clock(provider);
 
             int ringOnCount = 0;
@@ -101,10 +67,8 @@ namespace TimerTesting.Tests
                     ringOffCount++;
             };
 
-            tickCallback(null);
-
-            while (period == null || period.Value != Timeout.InfiniteTimeSpan)
-                ringCallback(null);
+            for (int i = 0; i < 13; i++) 
+                provider.Advance(new TimeSpan (0,0,1));
 
             Assert.Equal(count, ringOnCount);
             Assert.Equal(count, ringOffCount);
